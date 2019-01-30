@@ -1,0 +1,30 @@
+a.	Subscription: Use the current subscription
+b.	Resource Group: Use Existing: OMSHackathonRG
+c.	Location: Should be completed by using the OMSHackathonRG
+d.	Hackstorage Type: Premium_LRS
+e.	Hackathon VM Name: WEBVM1
+f.	Hackathon VM Admin User Name: demouser
+g.	Hackathon VM Admin Password: demo@pass123
+h.	Hackathon VM Windows OS Version: 2016-Datacenter
+i.	Hackathon Public IP DNS Name: omshack-then-five-random-lowercase-characters
+j.	Registration Key: Locate in the Automation Account Blade/Keys
+k.	Registration URL: Locate in the Automation Account Blade/Keys
+l.	Webnode Configuration Name: CloudShopWeb.WebServer
+m.	Sqlnode Configuration Name: CloudShopSQL.SQLSERVER
+n.	Reboot Node If Needed: true
+o.	Allow Module Overwrite: true
+p.	Configuration Mode: ApplyAndMonitor
+q.	Configuration Mode Frequency Mins: 15
+r.	Refresh Frequency: 30
+s.	Action After Reboot: ContinueConfiguration
+t.	Timestamp (use this format): 06/01/2017 14:45:00
+u.	Hackathon SQL VM Name: SQLVM
+v.	Hackathon SQL VM Admin Name: demouser
+w.	Hackathon SQL VM Admin Password: demo@pass123
+x.	Hackathon Sql VMSKU: SQLDEV
+y.	VM Size SQL: Standard_DS2_v2
+z.	Hackathon VM2Name: WEBVM2
+aa.	Hackathon VM2 Admin Name: demouser
+bb.	Hackathon VM2 Admin Password: demo@pass123
+cc.	Hackathon VM2 Windows OS Version: 2016-Datacenter
+dd.	Web AV Set Name: webAVSet

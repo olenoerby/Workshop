@@ -1,0 +1,864 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "hackstorageType": {
+      "type": "string",
+      "defaultValue": "Premium_LRS"
+    },
+    "hackathonVMName": {
+      "type": "string",
+      "defaultValue": "WEBVM1",
+      "minLength": 1
+    },
+    "hackathonVMAdminUserName": {
+      "type": "string",
+      "defaultValue": "demouser",
+      "minLength": 1
+    },
+    "hackathonVMAdminPassword": {
+      "type": "securestring"
+    },
+    "hackathonVMWindowsOSVersion": {
+      "type": "string",
+      "defaultValue": "2016-Datacenter",
+      "allowedValues": [
+        "2016-Datacenter"
+      ]
+    },
+    "hackathonPublicIPDnsName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "registrationKey": {
+      "type": "string",
+      "metadata": {
+        "description": "Registration key of Automation account"
+      }
+    },
+    "registrationUrl": {
+      "type": "string",
+      "metadata": {
+        "description": "Registration URL of Automation account"
+      }
+    },
+    "webnodeConfigurationName": {
+      "type": "string",
+      "defaultValue": "CloudShopWeb.WebServer",
+      "metadata": {
+        "description": "Name of configuration to apply"
+      }
+    },
+    "sqlnodeConfigurationName": {
+      "type": "string",
+      "defaultValue": "CloudShopSQL.SQLSERVER",
+      "metadata": {
+        "description": "Name of configuration to apply"
+      }
+    },
+    "rebootNodeIfNeeded": {
+      "type": "bool",
+      "defaultValue": "true",
+      "metadata": {
+        "description": "Reboot if needed"
+      }
+    },
+    "allowModuleOverwrite": {
+      "type": "bool",
+      "defaultValue": "true",
+      "metadata": {
+        "description": "Allow Module Overwrite"
+      }
+    },
+    "configurationMode": {
+      "type": "string",
+      "defaultValue": "ApplyAndMonitor",
+      "metadata": {
+        "description": "Configuration Mode"
+      }
+    },
+    "configurationModeFrequencyMins": {
+      "type": "int",
+      "defaultValue": 15,
+      "metadata": {
+        "description": "Allow Module Overwrite"
+      }
+    },
+    "refreshFrequencyMins": {
+      "type": "int",
+      "defaultValue": 30,
+      "metadata": {
+        "description": "Refresh frequency in minutes"
+      }
+    },
+    "actionAfterReboot": {
+      "type": "string",
+      "defaultValue": "ContinueConfiguration",
+      "allowedValues": [
+        "ContinueConfiguration",
+        "StopConfiguration"
+      ],
+      "metadata": {
+        "description": "Action after reboot"
+      }
+    },
+    "hackathonSqlVMName": {
+      "type": "string",
+      "defaultValue": "SQLVM",
+      "minLength": 1
+    },
+    "hackathonSqlVMAdminUserName": {
+      "type": "string",
+      "defaultValue": "demouser",
+      "minLength": 1
+    },
+    "hackathonSqlVMAdminPassword": {
+      "type": "securestring"
+    },
+    "hackathonSqlVMSKU": {
+      "type": "string",
+      "defaultValue": "SQLDEV",
+      "allowedValues": [
+        "SQLDEV"
+      ]
+    },
+    "vmSizeSql": {
+      "type": "string",
+      "defaultValue": "Standard_DS1_v2",
+      "allowedValues": [
+        "Standard_DS1_v2",
+        "Standard_DS2_v2"
+      ]
+    },
+      "hackathonVM2Name": {
+        "type": "string",
+        "defaultValue": "WEBVM2",
+          "minLength": 1
+      },
+      "hackathonVM2AdminUserName": {
+        "type": "string",
+        "defaultValue": "demouser",
+          "minLength": 1
+      },
+      "hackathonVM2AdminPassword": {
+          "type": "securestring"
+      },
+      "hackathonVM2WindowsOSVersion": {
+          "type": "string",
+          "defaultValue": "2016-Datacenter",
+          "allowedValues": [
+              "2016-Datacenter"
+            ]
+      },
+      "webAVSetName": {
+        "type": "string",
+        "defaultValue": "webAVSet",
+        "allowedValues": [
+              "webAVSet"
+            ]
+      }
+  },
+  "variables": {
+    "hackathonVnetPrefix": "10.0.0.0/16",
+    "hackathonVnetSubnet1Name": "FrontEndNet",
+    "hackathonVnetSubnet1Prefix": "10.0.0.0/24",
+    "hackathonVnetSubnet2Name": "DatabaseNet",
+    "hackathonVnetSubnet2Prefix": "10.0.1.0/24",
+    "hackstorageName": "[concat('hackstorage', uniqueString(resourceGroup().id))]",
+    "hackathonVMImagePublisher": "MicrosoftWindowsServer",
+    "hackathonVMImageOffer": "WindowsServer",
+    "hackathonVMOSDiskName": "hackathonVMOSDisk",
+    "hackathonVMVmSize": "Standard_DS1_v2",
+    "hackathonVMVnetID": "[resourceId('Microsoft.Network/virtualNetworks', 'hackathonVnet')]",
+    "hackathonVMSubnetRef": "[concat(variables('hackathonVMVnetID'), '/subnets/', variables('hackathonVnetSubnet1Name'))]",
+    "hackathonVMStorageAccountContainerName": "vhds",
+    "hackathonVMNicName": "[concat(parameters('hackathonVMName'), 'NetworkInterface')]",
+    "hackathonPublicIPName": "hackathonPublicIP",
+    "hackathonSqlVMImagePublisher": "MicrosoftSQLServer",
+    "hackathonSqlVMImageOffer": "SQL2016SP1-WS2016",
+    "hackathonSqlVMOSDiskName": "hackathonSqlVMOSDisk",
+    "hackathonSqlVMVnetID": "[resourceId('Microsoft.Network/virtualNetworks', 'hackathonVnet')]",
+    "hackathonSqlVMSubnetRef": "[concat(variables('hackathonSqlVMVnetID'), '/subnets/', variables('hackathonVnetSubnet2Name'))]",
+    "hackathonSqlVMStorageAccountContainerName": "vhds",
+    "hackathonSqlVMNicName": "[concat(parameters('hackathonSqlVMName'), 'NetworkInterface')]",
+    "dataDisk1VhdName": "[concat('http://',variables('hackStorageName'),'.blob.core.windows.net/','vhds','/','dataDisk1.vhd')]",
+    "dataDisk2VhdName": "[concat('http://',variables('hackStorageName'),'.blob.core.windows.net/','vhds','/','dataDisk2.vhd')]",
+    "publicIPAddressID": "[resourceId('Microsoft.Network/publicIPAddresses',variables('hackathonPublicIPName'))]",
+    "lbName": "loadBalancer1",
+    "lbID": "[resourceId('Microsoft.Network/loadBalancers',variables('lbName'))]",
+    "lbFEName": "loadBalancerFrontEnd",
+    "lbWebProbeName": "loadBalancerWebProbe",
+    "lbBEAddressPool": "loadBalancerBEAddressPool",
+    "lbFEIPConfigID": "[concat(variables('lbID'),'/frontendIPConfigurations/',variables('lbFEName'))]",
+    "lbBEAddressPoolID": "[concat(variables('lbID'),'/backendAddressPools/',variables('lbBEAddressPool'))]",
+    "lbWebProbeID": "[concat(variables('lbID'),'/probes/',variables('lbWebProbeName'))]",
+    "hackathonVM2ImagePublisher": "MicrosoftWindowsServer",
+    "hackathonVM2ImageOffer": "WindowsServer",
+    "hackathonVM2OSDiskName": "hackathonVM2OSDisk",
+    "hackathonVM2VmSize": "Standard_DS1_v2",
+    "hackathonVM2VnetID": "[resourceId('Microsoft.Network/virtualNetworks', 'hackathonVnet')]",
+    "hackathonVM2SubnetRef": "[concat(variables('hackathonVM2VnetID'), '/subnets/', variables('hackathonVnetSubnet1Name'))]",
+    "hackathonVM2StorageAccountContainerName": "vhds",
+    "hackathonVM2NicName": "[concat(parameters('hackathonVM2Name'), 'NetworkInterface')]",
+    "webAVSetName": "webAVSet"
+  },
+  "resources": [
+    {
+      "apiVersion": "2016-03-30",
+      "name": "[variables('lbName')]",
+      "type": "Microsoft.Network/loadBalancers",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/',variables('hackathonPublicIPName'))]"
+      ],
+      "properties": {
+        "frontendIPConfigurations": [
+          {
+            "name": "[variables('lbFEName')]",
+            "properties": {
+              "publicIPAddress": {
+                "id": "[variables('publicIPAddressID')]"
+              }
+            }
+          }
+        ],
+        "backendAddressPools": [
+          {
+            "name": "[variables('lbBEAddressPool')]"
+          }
+        ],
+        "loadBalancingRules": [
+          {
+            "name": "weblb",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[variables('lbFEIPConfigID')]"
+              },
+              "backendAddressPool": {
+                "id": "[variables('lbBEAddressPoolID')]"
+              },
+              "probe": {
+                "id": "[variables('lbWebProbeID')]"
+              },
+              "protocol": "Tcp",
+              "frontendPort": 80,
+              "backendPort": 80,
+              "enableFloatingIP": false
+            }
+          }
+        ],
+        "probes": [
+          {
+            "name": "[variables('lbWebProbeName')]",
+            "properties": {
+              "protocol": "Http",
+              "port": 80,
+              "intervalInSeconds": 15,
+              "numberOfProbes": 5,
+              "requestPath": "/"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2016-03-30",
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "name": "hackathonNetworkSecurityGroup",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "webrule",
+            "properties": {
+              "description": "This rule allows traffic in on port 80",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "80",
+              "sourceAddressPrefix": "INTERNET",
+              "destinationAddressPrefix": "10.0.0.0/24",
+              "access": "Allow",
+              "priority": 100,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "rdprule",
+            "properties": {
+              "description": "This rule allows traffic on port 3389 from the web",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "3389",
+              "sourceAddressPrefix": "INTERNET",
+              "destinationAddressPrefix": "10.0.0.0/24",
+              "access": "Allow",
+              "priority": 200,
+              "direction": "Inbound"
+            }
+          }
+        ]
+      }
+    },
+
+    {
+      "name": "hackathonVnet",
+      "type": "Microsoft.Network/virtualNetworks",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2016-03-30",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', 'hackathonNetworkSecurityGroup')]"
+      ],
+      "tags": {
+        "displayName": "hackathonVnet"
+      },
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[variables('hackathonVnetPrefix')]"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[variables('hackathonVnetSubnet1Name')]",
+            "properties": {
+              "addressPrefix": "[variables('hackathonVnetSubnet1Prefix')]",
+              "networkSecurityGroup": {
+                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', 'hackathonNetworkSecurityGroup')]"
+              }
+            }
+          },
+          {
+            "name": "[variables('hackathonVnetSubnet2Name')]",
+            "properties": {
+              "addressPrefix": "[variables('hackathonVnetSubnet2Prefix')]"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "[variables('hackstorageName')]",
+      "type": "Microsoft.Storage/storageAccounts",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-06-15",
+      "dependsOn": [],
+      "tags": {
+        "displayName": "hackstorage"
+      },
+      "properties": {
+        "accountType": "[parameters('hackstorageType')]"
+      }
+    },
+    {
+      "name": "[variables('hackathonVMNicName')]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2016-03-30",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', 'hackathonVnet')]",
+        "[resourceId('Microsoft.Network/publicIPAddresses', variables('hackathonPublicIPName'))]"
+      ],
+      "tags": {
+        "displayName": "hackathonVMNic"
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[variables('hackathonVMSubnetRef')]"
+              },
+              "loadBalancerBackendAddressPools": [
+                { "id": "[variables('lbBEAddressPoolID')]" }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "[parameters('hackathonVMName')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-06-15",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('hackstorageName'))]",
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('hackathonVMNicName'))]"
+      ],
+      "tags": {
+        "displayName": "hackathonVM"
+      },
+      "properties": {
+        "availabilitySet": {
+          "id": "[resourceId('Microsoft.Compute/availabilitySets', variables('webAVSetName'))]"
+        },
+        "hardwareProfile": {
+          "vmSize": "[variables('hackathonVMVmSize')]"
+        },
+        "osProfile": {
+          "computerName": "[parameters('hackathonVMName')]",
+          "adminUsername": "[parameters('hackathonVMAdminUsername')]",
+          "adminPassword": "[parameters('hackathonVMAdminPassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[variables('hackathonVMImagePublisher')]",
+            "offer": "[variables('hackathonVMImageOffer')]",
+            "sku": "[parameters('hackathonVMWindowsOSVersion')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "hackathonVMOSDisk",
+            "vhd": {
+              "uri": "[concat(reference(resourceId('Microsoft.Storage/storageAccounts', variables('hackstorageName')), '2016-01-01').primaryEndpoints.blob, variables('hackathonVMStorageAccountContainerName'), '/', variables('hackathonVMOSDiskName'), '.vhd')]"
+            },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('hackathonVMNicName'))]"
+            }
+          ]
+        }
+      },
+      "resources": [
+        {
+          "name": "Microsoft.Powershell.DSC",
+          "type": "extensions",
+          "location": "[resourceGroup().location]",
+          "apiVersion": "2016-03-30",
+          "dependsOn": [
+            "[resourceId('Microsoft.Compute/virtualMachines', parameters('hackathonVMName'))]"
+          ],
+          "tags": {
+            "displayName": "hackathonDSC"
+          },
+          "properties": {
+            "publisher": "Microsoft.Powershell",
+            "type": "DSC",
+            "typeHandlerVersion": "2.19",
+            "autoUpgradeMinorVersion": true,
+            "settings": {
+              "modulesUrl": "https://cloudworkshop.blob.core.windows.net/operations-management-suite/RegistrationMetaConfigV2.zip",
+              "configurationFunction": "RegistrationMetaConfigV2.ps1\\RegistrationMetaConfigV2",
+              "Properties": [
+                {
+                  "Name": "RegistrationKey",
+                  "Value": {
+                    "UserName": "PLACEHOLDER_DONOTUSE",
+                    "Password": "PrivateSettingsRef:registrationKeyPrivate"
+                  },
+                  "TypeName": "System.Management.Automation.PSCredential"
+                },
+                {
+                  "Name": "RegistrationUrl",
+                  "Value": "[parameters('registrationUrl')]",
+                  "TypeName": "System.String"
+                },
+                {
+                  "Name": "NodeConfigurationName",
+                  "Value": "[parameters('webnodeConfigurationName')]",
+                  "TypeName": "System.String"
+                },
+                {
+                  "Name": "ConfigurationMode",
+                  "Value": "[parameters('configurationMode')]",
+                  "TypeName": "System.String"
+                },
+                {
+                  "Name": "ConfigurationModeFrequencyMins",
+                  "Value": "[parameters('configurationModeFrequencyMins')]",
+                  "TypeName": "System.Int32"
+                },
+                {
+                  "Name": "RefreshFrequencyMins",
+                  "Value": "[parameters('refreshFrequencyMins')]",
+                  "TypeName": "System.Int32"
+                },
+                {
+                  "Name": "RebootNodeIfNeeded",
+                  "Value": "[parameters('rebootNodeIfNeeded')]",
+                  "TypeName": "System.Boolean"
+                },
+                {
+                  "Name": "ActionAfterReboot",
+                  "Value": "[parameters('actionAfterReboot')]",
+                  "TypeName": "System.String"
+                },
+                {
+                  "Name": "AllowModuleOverwrite",
+                  "Value": "[parameters('allowModuleOverwrite')]",
+                  "TypeName": "System.Boolean"
+                }
+              ]
+            },
+            "protectedSettings": {
+              "Items": {
+                "registrationKeyPrivate": "[parameters('registrationKey')]"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "[variables('hackathonPublicIPName')]",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2016-03-30",
+      "dependsOn": [],
+      "tags": {
+        "displayName": "hackathonPublicIP"
+      },
+      "properties": {
+        "publicIPAllocationMethod": "Dynamic",
+        "dnsSettings": {
+          "domainNameLabel": "[parameters('hackathonPublicIPDnsName')]"
+        }
+      }
+    },
+    {
+      "name": "[variables('hackathonSqlVMNicName')]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2016-03-30",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', 'hackathonVnet')]"
+      ],
+      "tags": {
+        "displayName": "hackathonSqlVMNic"
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[variables('hackathonSqlVMSubnetRef')]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "[parameters('hackathonSqlVMName')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-06-15",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('hackstorageName'))]",
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('hackathonSqlVMNicName'))]"
+      ],
+      "tags": {
+        "displayName": "hackathonSqlVM"
+      },
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('vmSizeSql')]"
+        },
+        "osProfile": {
+          "computerName": "[parameters('hackathonSqlVMName')]",
+          "adminUsername": "[parameters('hackathonSqlVMAdminUsername')]",
+          "adminPassword": "[parameters('hackathonSqlVMAdminPassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[variables('hackathonSqlVMImagePublisher')]",
+            "offer": "[variables('hackathonSqlVMImageOffer')]",
+            "sku": "[parameters('hackathonSqlVMSKU')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "hackathonSqlVMOSDisk",
+            "vhd": {
+              "uri": "[concat(reference(resourceId('Microsoft.Storage/storageAccounts', variables('hackstorageName')), '2016-01-01').primaryEndpoints.blob, variables('hackathonSqlVMStorageAccountContainerName'), '/', variables('hackathonSqlVMOSDiskName'), '.vhd')]"
+            },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+          },
+          "dataDisks": [
+            {
+              "name": "datadisk1",
+              "diskSizeGB": "1023",
+              "lun": 0,
+              "vhd": { "uri": "[variables('dataDisk1VhdName')]" },
+              "createOption": "Empty"
+            },
+            {
+              "name": "datadisk2",
+              "diskSizeGB": "1023",
+              "lun": 1,
+              "vhd": { "uri": "[variables('dataDisk2VhdName')]" },
+              "createOption": "Empty"
+            }
+          ]
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('hackathonSqlVMNicName'))]"
+            }
+          ]
+        }
+      },
+      "resources": [
+        {
+          "name": "Microsoft.Powershell.DSC",
+          "type": "extensions",
+          "location": "[resourceGroup().location]",
+          "apiVersion": "2016-03-30",
+          "dependsOn": [
+            "[resourceId('Microsoft.Compute/virtualMachines', parameters('hackathonSqlVMName'))]"
+          ],
+          "tags": {
+            "displayName": "hackathonDSCSQL"
+          },
+          "properties": {
+            "publisher": "Microsoft.Powershell",
+            "type": "DSC",
+            "typeHandlerVersion": "2.19",
+            "autoUpgradeMinorVersion": true,
+            "settings": {
+              "modulesUrl": "https://cloudworkshop.blob.core.windows.net/operations-management-suite/RegistrationMetaConfigV2.zip",
+              "configurationFunction": "RegistrationMetaConfigV2.ps1\\RegistrationMetaConfigV2",
+              "Properties": [
+                {
+                  "Name": "RegistrationKey",
+                  "Value": {
+                    "UserName": "PLACEHOLDER_DONOTUSE",
+                    "Password": "PrivateSettingsRef:registrationKeyPrivate"
+                  },
+                  "TypeName": "System.Management.Automation.PSCredential"
+                },
+                {
+                  "Name": "RegistrationUrl",
+                  "Value": "[parameters('registrationUrl')]",
+                  "TypeName": "System.String"
+                },
+                {
+                  "Name": "NodeConfigurationName",
+                  "Value": "[parameters('sqlnodeConfigurationName')]",
+                  "TypeName": "System.String"
+                },
+                {
+                  "Name": "ConfigurationMode",
+                  "Value": "[parameters('configurationMode')]",
+                  "TypeName": "System.String"
+                },
+                {
+                  "Name": "ConfigurationModeFrequencyMins",
+                  "Value": "[parameters('configurationModeFrequencyMins')]",
+                  "TypeName": "System.Int32"
+                },
+                {
+                  "Name": "RefreshFrequencyMins",
+                  "Value": "[parameters('refreshFrequencyMins')]",
+                  "TypeName": "System.Int32"
+                },
+                {
+                  "Name": "RebootNodeIfNeeded",
+                  "Value": "[parameters('rebootNodeIfNeeded')]",
+                  "TypeName": "System.Boolean"
+                },
+                {
+                  "Name": "ActionAfterReboot",
+                  "Value": "[parameters('actionAfterReboot')]",
+                  "TypeName": "System.String"
+                },
+                {
+                  "Name": "AllowModuleOverwrite",
+                  "Value": "[parameters('allowModuleOverwrite')]",
+                  "TypeName": "System.Boolean"
+                }
+              ]
+            },
+            "protectedSettings": {
+              "Items": {
+                "registrationKeyPrivate": "[parameters('registrationKey')]"
+              }
+            }
+          }
+        }
+      ]
+    },
+      {
+          "name": "[variables('hackathonVM2NicName')]",
+          "type": "Microsoft.Network/networkInterfaces",
+          "location": "[resourceGroup().location]",
+          "apiVersion": "2016-03-30",
+          "dependsOn": [
+              "[resourceId('Microsoft.Network/virtualNetworks', 'hackathonVnet')]"
+          ],
+          "tags": {
+              "displayName": "hackathonVM2Nic"
+          },
+          "properties": {
+              "ipConfigurations": [
+                  {
+                      "name": "ipconfig1",
+                    "properties": {
+                      "privateIPAllocationMethod": "Dynamic",
+                      "subnet": {
+                        "id": "[variables('hackathonVM2SubnetRef')]"
+                      },
+                      "loadBalancerBackendAddressPools": [
+                        { "id": "[variables('lbBEAddressPoolID')]" }
+                      ]
+                    }
+                  }
+              ]
+          }
+      },
+      {
+          "name": "[parameters('hackathonVM2Name')]",
+          "type": "Microsoft.Compute/virtualMachines",
+          "location": "[resourceGroup().location]",
+          "apiVersion": "2015-06-15",
+          "dependsOn": [
+              "[resourceId('Microsoft.Storage/storageAccounts', variables('hackstorageName'))]",
+              "[resourceId('Microsoft.Network/networkInterfaces', variables('hackathonVM2NicName'))]"
+          ],
+          "tags": {
+              "displayName": "hackathonVM2"
+          },
+        "properties": {
+          "availabilitySet": {
+            "id": "[resourceId('Microsoft.Compute/availabilitySets', variables('webAVSetName'))]"
+          },
+          "hardwareProfile": {
+            "vmSize": "[variables('hackathonVM2VmSize')]"
+          },
+          "osProfile": {
+            "computerName": "[parameters('hackathonVM2Name')]",
+            "adminUsername": "[parameters('hackathonVM2AdminUsername')]",
+            "adminPassword": "[parameters('hackathonVM2AdminPassword')]"
+          },
+          "storageProfile": {
+            "imageReference": {
+              "publisher": "[variables('hackathonVM2ImagePublisher')]",
+              "offer": "[variables('hackathonVM2ImageOffer')]",
+              "sku": "[parameters('hackathonVM2WindowsOSVersion')]",
+              "version": "latest"
+            },
+            "osDisk": {
+              "name": "hackathonVM2OSDisk",
+              "vhd": {
+                "uri": "[concat(reference(resourceId('Microsoft.Storage/storageAccounts', variables('hackstorageName')), '2016-01-01').primaryEndpoints.blob, variables('hackathonVM2StorageAccountContainerName'), '/', variables('hackathonVM2OSDiskName'), '.vhd')]"
+              },
+              "caching": "ReadWrite",
+              "createOption": "FromImage"
+            }
+          },
+          "networkProfile": {
+            "networkInterfaces": [
+              {
+                "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('hackathonVM2NicName'))]"
+              }
+            ]
+          }
+        },
+          "resources": [
+              {
+                  "name": "Microsoft.Powershell.DSC",
+                  "type": "extensions",
+                  "location": "[resourceGroup().location]",
+                  "apiVersion": "2016-03-30",
+                  "dependsOn": [
+                      "[resourceId('Microsoft.Compute/virtualMachines', parameters('hackathonVM2Name'))]"
+                  ],
+                  "tags": {
+                      "displayName": "hackathonDSC2"
+                  },
+                  "properties": {
+                      "publisher": "Microsoft.Powershell",
+                      "type": "DSC",
+                      "typeHandlerVersion": "2.19",
+                      "autoUpgradeMinorVersion": true,
+ "settings": {
+                    "modulesUrl": "https://cloudworkshop.blob.core.windows.net/operations-management-suite/RegistrationMetaConfigV2.zip",
+                    "configurationFunction": "RegistrationMetaConfigV2.ps1\\RegistrationMetaConfigV2",
+                    "Properties": [
+                      {
+                        "Name": "RegistrationKey",
+                        "Value": {
+                          "UserName": "PLACEHOLDER_DONOTUSE",
+                          "Password": "PrivateSettingsRef:registrationKeyPrivate"
+                        },
+                        "TypeName": "System.Management.Automation.PSCredential"
+                      },
+                      {
+                        "Name": "RegistrationUrl",
+                        "Value": "[parameters('registrationUrl')]",
+                        "TypeName": "System.String"
+                      },
+                      {
+                        "Name": "NodeConfigurationName",
+                        "Value": "[parameters('webnodeConfigurationName')]",
+                        "TypeName": "System.String"
+                      },
+                      {
+                        "Name": "ConfigurationMode",
+                        "Value": "[parameters('configurationMode')]",
+                        "TypeName": "System.String"
+                      },
+                      {
+                        "Name": "ConfigurationModeFrequencyMins",
+                        "Value": "[parameters('configurationModeFrequencyMins')]",
+                        "TypeName": "System.Int32"
+                      },
+                      {
+                        "Name": "RefreshFrequencyMins",
+                        "Value": "[parameters('refreshFrequencyMins')]",
+                        "TypeName": "System.Int32"
+                      },
+                      {
+                        "Name": "RebootNodeIfNeeded",
+                        "Value": "[parameters('rebootNodeIfNeeded')]",
+                        "TypeName": "System.Boolean"
+                      },
+                      {
+                        "Name": "ActionAfterReboot",
+                        "Value": "[parameters('actionAfterReboot')]",
+                        "TypeName": "System.String"
+                      },
+                      {
+                        "Name": "AllowModuleOverwrite",
+                        "Value": "[parameters('allowModuleOverwrite')]",
+                        "TypeName": "System.Boolean"
+                      }
+                   ]
+              },
+
+                      "protectedSettings": {
+                        "Items": {
+                          "registrationKeyPrivate": "[parameters('registrationKey')]"
+                        }
+                      }
+                  }
+              }
+          ]
+      },
+      {
+          "name": "[parameters('webAVSetName')]",
+          "type": "Microsoft.Compute/availabilitySets",
+          "location": "[resourceGroup().location]",
+          "apiVersion": "2015-06-15",
+          "dependsOn": [ ],
+          "tags": {
+              "displayName": "webAVSet"
+          },
+          "properties": {
+              "platformUpdateDomainCount": 5,
+              "platformFaultDomainCount": 3
+          }
+      }
+  ],
+  "outputs": {}
+}

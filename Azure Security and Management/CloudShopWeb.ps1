@@ -14,7 +14,7 @@ Configuration CloudShopWeb
 		    Ensure          = "Present" 
 		    Name            = "Web-Asp-Net45" 
 	    } 
- 
+	   
 	    Script DeployWebPackage
 	    {
 		    GetScript = {@{Result = "DeployWebPackage"}}
@@ -29,12 +29,12 @@ Configuration CloudShopWeb
                 }
             }
 		    SetScript ={
-			    [system.io.directory]:: CreateDirectory("C:\WebApp")
+			    [system.io.directory]::CreateDirectory("C:\WebApp")
 			    $dest = "C:\WebApp\Site.zip" 
                 Remove-Item -path "C:\inetpub\wwwroot" -Force -Recurse -ErrorAction SilentlyContinue
-			    Invoke-WebRequest "http://opsgilityweb.blob.core.windows.net/20160217course-azure-iaas-arm/cloudshop.zip" -OutFile $dest
+			    Invoke-WebRequest "https://cloudworkshop.blob.core.windows.net/operations-management-suite/cloudshop.zip" -OutFile $dest
 			    Add-Type -assembly "system.io.compression.filesystem"
-			    [io.compression.zipfile]:: ExtractToDirectory($dest, "C:\inetpub\wwwroot")
+			    [io.compression.zipfile]::ExtractToDirectory($dest, "C:\inetpub\wwwroot")
 		    }
 		    DependsOn  = "[WindowsFeature]IIS"
 	    }
