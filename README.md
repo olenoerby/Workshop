@@ -15,6 +15,7 @@ https://blog.ctglobalservices.com/
 
 ### Day 2
 1. [Enterprise-class networking in Azure](https://github.com/Microsoft/MCW-Enterprise-class-networking/blob/master/Hands-on%20lab/HOL%20step-by-step%20-%20Enterprise-class%20networking%20in%20Azure.md)
+
 Files is available in the "before" guide:
 https://github.com/Microsoft/MCW-Enterprise-class-networking/blob/master/Hands-on%20lab/Before%20the%20HOL%20-%20Enterprise-class%20networking.md
 
