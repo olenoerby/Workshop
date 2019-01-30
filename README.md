@@ -18,6 +18,7 @@ https://blog.ctglobalservices.com/
 
 Files is available in the "before" guide:
 https://github.com/Microsoft/MCW-Enterprise-class-networking/blob/master/Hands-on%20lab/Before%20the%20HOL%20-%20Enterprise-class%20networking.md
+Direct link to file: https://cloudworkshop.blob.core.windows.net/enterprise-networking/ECN-Hackathon.zip
 
 2. [Azure security and management - Exercises 1, 2, 3, and 5](https://github.com/Microsoft/MCW-Azure-security-and-management/blob/master/Hands-on%20lab/HOL%20step-by-step%20-%20Azure%20security%20and%20management.md)
 
