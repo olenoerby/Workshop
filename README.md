@@ -23,6 +23,8 @@ Direct link to file: https://cloudworkshop.blob.core.windows.net/enterprise-netw
 
 2. [Azure security and management - Exercises 1, 2, 3, and 5](https://github.com/Microsoft/MCW-Azure-security-and-management/blob/master/Hands-on%20lab/HOL%20step-by-step%20-%20Azure%20security%20and%20management.md)
 
+Files: https://cloudworkshop.blob.core.windows.net/operations-management-suite/StudentFiles.zip
+
 3. [Building a resilient IaaS architecture](https://github.com/Microsoft/MCW-Building-a-resilient-IaaS-architecture/blob/master/Hands-on%20lab/HOL%20step-by%20step%20-%20Building%20a%20resilient%20IaaS%20architecture.md)
 
 4.1 [Continuous delivery webapps with ARM templates Part 1](https://cloudmechanic.net/2017/10/05/continuous-delivery-webapps-with-arm-templates-part-1/)
